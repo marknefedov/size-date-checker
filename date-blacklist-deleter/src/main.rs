@@ -1,5 +1,4 @@
 use chrono::{DateTime, Datelike, Duration, Utc};
-use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::collections::HashSet;
 use std::env;
@@ -25,16 +24,7 @@ fn main() -> io::Result<()> {
 
     let do_not_delete_set = load_do_not_delete_set(do_not_delete_list_file)?;
 
-    let pb = ProgressBar::new_spinner();
-    pb.set_style(
-        ProgressStyle::default_spinner()
-            .template("Deleting {spinner} {prefix} files...")
-            .unwrap(),
-    );
-
-    delete_old_files(folder_path, cutoff_date, &pb, &do_not_delete_set)?;
-
-    pb.finish_with_message("Deletion complete.");
+    delete_old_files(folder_path, cutoff_date, &do_not_delete_set)?;
 
     Ok(())
 }
@@ -56,14 +46,10 @@ fn load_do_not_delete_set<P: AsRef<Path>>(file_path: P) -> io::Result<HashSet<Pa
 fn delete_old_files<P: AsRef<Path>>(
     folder_path: P,
     cutoff_date: DateTime<Utc>,
-    pb: &ProgressBar,
     do_not_delete_set: &HashSet<PathBuf>,
 ) -> io::Result<()> {
     let entries: Vec<_> = fs::read_dir(folder_path)?.collect();
     entries.into_par_iter().for_each(|entry| {
-        pb.inc_length(1);
-        pb.tick();
-
         let entry = match entry {
             Ok(e) => e,
             Err(e) => {
@@ -97,13 +83,10 @@ fn delete_old_files<P: AsRef<Path>>(
                 }
             }
         } else if metadata.is_dir() {
-            if let Err(e) = delete_old_files(path, cutoff_date, pb, do_not_delete_set) {
+            if let Err(e) = delete_old_files(path, cutoff_date, do_not_delete_set) {
                 eprintln!("Error processing folder: {}", e);
             }
         }
-
-        pb.inc(1);
-        pb.tick();
     });
 
     Ok(())
