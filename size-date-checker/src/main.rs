@@ -1,7 +1,6 @@
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use dashmap::DashMap;
 use rayon::prelude::*;
-use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io;
@@ -13,22 +12,17 @@ fn main() -> io::Result<()> {
         eprintln!("Usage: {} <directory_path>", args[0]);
         std::process::exit(1);
     }
-
     let folder_path = &args[1];
     let sizes_by_month = DashMap::new();
-
     process_folder(folder_path, &sizes_by_month)?;
-
     let mut months: Vec<_> = sizes_by_month
         .iter()
         .map(|e| (*e.key(), *e.value()))
         .collect();
     months.sort_by_key(|&(month, _)| month);
-
     for (month, size) in months {
         println!("{}: {} bytes", month, size);
     }
-
     Ok(())
 }
 
@@ -45,7 +39,6 @@ fn process_folder<P: AsRef<Path>>(
                 return;
             }
         };
-
         let metadata = match entry.metadata() {
             Ok(m) => m,
             Err(e) => {
@@ -53,7 +46,6 @@ fn process_folder<P: AsRef<Path>>(
                 return;
             }
         };
-
         if metadata.is_file() {
             let modified_time = match metadata.modified() {
                 Ok(t) => t,
@@ -62,11 +54,9 @@ fn process_folder<P: AsRef<Path>>(
                     return;
                 }
             };
-
             let datetime: DateTime<Utc> = modified_time.into();
-            let naive_date = NaiveDate::from_ymd(datetime.year(), datetime.month(), 1);
+            let naive_date = NaiveDate::from_ymd_opt(datetime.year(), datetime.month(), 1).unwrap();
             let size = metadata.len();
-
             sizes_by_month
                 .entry(naive_date)
                 .and_modify(|total_size| *total_size += size)
@@ -77,6 +67,5 @@ fn process_folder<P: AsRef<Path>>(
             }
         }
     });
-
     Ok(())
 }
