@@ -25,10 +25,10 @@ Replace `<directory_path>` with the path to the folder you want to analyze.
 
 ### 2. delete_old_files
 
-Delete files in a folder that are older than a specified number of months:
+Delete files in a folder that are older than a specified cutoff date:
 
 ```
-date-blacklist-deleter <directory_path> <months> <do_not_delete_list_file>
+date-blacklist-deleter <directory_path> <cutoff_date> <do_not_delete_list_file>
 ```
 
 Replace the following placeholders:
